@@ -1,4 +1,5 @@
 #include "MPC.h"
+#include <math.h>
 #include <cppad/cppad.hpp>
 #include <cppad/ipopt/solve.hpp>
 #include "Eigen-3.3/Eigen/Core"
@@ -152,6 +153,12 @@ public:
       fg[1 + v_start    + t] = v1 -    (v0               + a0 * MPC::dt);
       fg[1 + cte_start  + t] = cte1 -  ((f0 - y0)        + (v0 * CppAD::sin(epsi0) * MPC::dt));
       fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / MPC::Lf * MPC::dt);
+
+      // normalize angles
+      while ( fg[1 + psi_start  + t] < -M_PI )  fg[1 + psi_start  + t]  = fg[1 + psi_start  + t]  + 2 * M_PI;
+      while ( fg[1 + psi_start  + t] >  M_PI )  fg[1 + psi_start  + t]  = fg[1 + psi_start  + t]  - 2 * M_PI;
+      while ( fg[1 + epsi_start  + t] < -M_PI ) fg[1 + epsi_start  + t] = fg[1 + epsi_start  + t] + 2 * M_PI;
+      while ( fg[1 + epsi_start  + t] >  M_PI ) fg[1 + epsi_start  + t] = fg[1 + epsi_start  + t] - 2 * M_PI;
     }
   }
 };
