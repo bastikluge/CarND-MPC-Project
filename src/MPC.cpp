@@ -7,7 +7,7 @@
 using CppAD::AD;
 
 // Set the timestep length and duration
-const size_t MPC::N = 20;
+const size_t MPC::N = 10;
 const double MPC::dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
@@ -71,22 +71,22 @@ public:
     // The part of the cost based on the reference state.
     for (size_t t = 0; t < MPC::N; t++)
     {
-      fg[0] += CppAD::pow(vars[cte_start  + t], 2);
-      fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start    + t] - MPC::ref_v, 2);
+      fg[0] += 1.0  * CppAD::pow(vars[cte_start  + t], 2);
+      fg[0] += 1.0  * CppAD::pow(vars[epsi_start + t], 2);
+      fg[0] += 0.01 * CppAD::pow(vars[v_start    + t] - MPC::ref_v, 2);
     }
 
     // Minimize the use of actuators.
     for (size_t t = 0; t < MPC::N - 1; t++)
     {
-      fg[0] += 1.0 * CppAD::pow(vars[delta_start + t], 2);
-      fg[0] += 1.0 * CppAD::pow(vars[a_start     + t], 2);
+      fg[0] += 1.0  * CppAD::pow(vars[delta_start + t], 2);
+      fg[0] += 0.25 * CppAD::pow(vars[a_start     + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
     for (size_t t = 0; t < MPC::N - 2; t++)
     {
-      fg[0] += 1.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
+      fg[0] += 4.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += 1.0 * CppAD::pow(vars[a_start     + t + 1] - vars[a_start     + t], 2);
     }
 
@@ -153,12 +153,6 @@ public:
       fg[1 + v_start    + t] = v1 -    (v0               + a0 * MPC::dt);
       fg[1 + cte_start  + t] = cte1 -  ((f0 - y0)        + (v0 * CppAD::sin(epsi0) * MPC::dt));
       fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / MPC::Lf * MPC::dt);
-
-      // normalize angles
-      while ( fg[1 + psi_start  + t] < -M_PI )  fg[1 + psi_start  + t]  = fg[1 + psi_start  + t]  + 2 * M_PI;
-      while ( fg[1 + psi_start  + t] >  M_PI )  fg[1 + psi_start  + t]  = fg[1 + psi_start  + t]  - 2 * M_PI;
-      while ( fg[1 + epsi_start  + t] < -M_PI ) fg[1 + epsi_start  + t] = fg[1 + epsi_start  + t] + 2 * M_PI;
-      while ( fg[1 + epsi_start  + t] >  M_PI ) fg[1 + epsi_start  + t] = fg[1 + epsi_start  + t] - 2 * M_PI;
     }
   }
 };
