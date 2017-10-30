@@ -123,10 +123,10 @@ int main() {
 
           (void)mpc.Solve(state, coeffs, delta, a, mpc_x_vals, mpc_y_vals);
 
-          std::cout << "OUTPUT:    {delta, a}                = "
+          std::cout << "OUTPUT:    {delta, a}                = " << std::endl
                     << "           {"
                     << delta << ", " << a << "}" << std::endl;
-          std::cout << "MPC:       {(x, y) -> (x, y) -> ...} = "
+          std::cout << "MPC:       {(x, y) -> (x, y) -> ...} = " << std::endl
                     << "           {("
                     << mpc_x_vals[0] << ", " << mpc_y_vals[0] << ") -> ("
                     << mpc_x_vals[1] << ", " << mpc_y_vals[1] << ") -> ...}" << std::endl << std::endl;
