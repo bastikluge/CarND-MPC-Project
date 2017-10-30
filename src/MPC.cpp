@@ -68,7 +68,7 @@ public:
     fg[0] = 0;
 
     // The part of the cost based on the reference state.
-    for (int t = 0; t < N; t++)
+    for (size_t t = 0; t < N; t++)
     {
       fg[0] += CppAD::pow(vars[cte_start  + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
@@ -76,14 +76,14 @@ public:
     }
 
     // Minimize the use of actuators.
-    for (int t = 0; t < N - 1; t++)
+    for (size_t t = 0; t < N - 1; t++)
     {
       fg[0] += 1.0 * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += 1.0 * CppAD::pow(vars[a_start     + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
-    for (int t = 0; t < N - 2; t++)
+    for (size_t t = 0; t < N - 2; t++)
     {
       fg[0] += 1.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += 1.0 * CppAD::pow(vars[a_start     + t + 1] - vars[a_start     + t], 2);
@@ -107,7 +107,7 @@ public:
     fg[1 + epsi_start] = vars[epsi_start];
 
     // The rest of the constraints
-    for (int t = 1; t < N; t++)
+    for (size_t t = 1; t < N; t++)
     {
       // The state at time t+1 .
       AD<double> x1    = vars[x_start    + t];
@@ -162,7 +162,6 @@ bool MPC::Solve
   )
 {
   bool ok = true;
-  size_t i;
   typedef CPPAD_TESTVECTOR(double) Dvector;
 
   // extract components of initial state
@@ -183,7 +182,7 @@ bool MPC::Solve
   //////////////////////////////////////////////////////////////////////
   // Should be 0 besides initial state.
   Dvector vars(n_vars);
-  for (int i = 0; i < n_vars; i++)
+  for (size_t i = 0; i < n_vars; i++)
   {
     vars[i] = 0;
   }
@@ -203,7 +202,7 @@ bool MPC::Solve
 
   // Set all non-actuators upper and lowerlimits
   // to the max negative and positive values.
-  for (int i = 0; i < delta_start; i++)
+  for (size_t i = 0; i < delta_start; i++)
   {
     vars_lowerbound[i] = -1.0e19;
     vars_upperbound[i] = 1.0e19;
@@ -212,7 +211,7 @@ bool MPC::Solve
   // The upper and lower limits of delta are set to -25 and 25
   // degrees (values in radians).
   // NOTE: Feel free to change this to something else.
-  for (int i = delta_start; i < a_start; i++)
+  for (size_t i = delta_start; i < a_start; i++)
   {
     vars_lowerbound[i] = -0.436332;
     vars_upperbound[i] = 0.436332;
@@ -220,7 +219,7 @@ bool MPC::Solve
 
   // Acceleration/decceleration upper and lower limits.
   // NOTE: Feel free to change this to something else.
-  for (int i = a_start; i < n_vars; i++)
+  for (size_t i = a_start; i < n_vars; i++)
   {
     vars_lowerbound[i] = -1.0;
     vars_upperbound[i] = 1.0;
@@ -232,7 +231,7 @@ bool MPC::Solve
   // Should be 0 besides initial state.
   Dvector constraints_lowerbound(n_constraints);
   Dvector constraints_upperbound(n_constraints);
-  for (int i = 0; i < n_constraints; i++)
+  for (size_t i = 0; i < n_constraints; i++)
   {
     constraints_lowerbound[i] = 0;
     constraints_upperbound[i] = 0;
@@ -301,7 +300,7 @@ bool MPC::Solve
   a     = solution.x[a_start];
   x_trajectory.resize(N);
   y_trajectory.resize(N);
-  for (int i=0; i<N; i++)
+  for (size_t i=0; i<N; i++)
   {
     x_trajectory[i] = solution.x[x_start + i];
     y_trajectory[i] = solution.x[y_start + i];

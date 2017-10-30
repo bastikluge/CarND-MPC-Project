@@ -95,12 +95,12 @@ int main() {
           // Calculate reference trajectory
           size_t dim = (ptsx.size() < ptsy.size()) ? ptsx.size() : ptsy.size();
           Eigen::VectorXd xvals(dim), yvals(dim);
-          for (int i=0; i<dim; i++)
+          for (size_t i=0; i<dim; i++)
           {
             xvals[i] = ptsx[i];
             yvals[i] = ptsy[i];
           }
-          auto coeffs = polyfit(ptsx, ptsy, 1);
+          auto coeffs = polyfit(xvals, yvals, 3);
 
           // Solve MPC problem
           Eigen::VectorXd state(6);
@@ -109,7 +109,7 @@ int main() {
           state[2] = psi;
           state[3] = v;
           state[4] = polyeval(coeffs, px) - py;
-          state[5] = psi - atan(coeffs[1]);
+          state[5] = psi - atan(coeffs[1] + 2.0 * coeffs[2] * px + 3.0 * coeffs[3] * px * px);
           double delta, a;
           vector<double> mpc_x_vals, mpc_y_vals;
 
@@ -139,7 +139,7 @@ int main() {
           vector<double> next_x_vals, next_y_vals;
           next_x_vals.resize(mpc_x_vals.size());
           next_y_vals.resize(mpc_y_vals.size());
-          for (int i=0; i<mpc_x_vals.size(); i++)
+          for (size_t i=0; i<mpc_x_vals.size(); i++)
           {
             next_x_vals[i] = mpc_x_vals[i];
             next_y_vals[i] = polyeval(coeffs, next_x_vals[i]);
