@@ -284,14 +284,19 @@ bool MPC::Solve
 
   // Check some of the solution values
   ok &= (solution.status == CppAD::ipopt::solve_result<Dvector>::success);
-  if ( !ok )
+
+  if ( ok )
   {
+    // Cost
+    auto cost = solution.obj_value;
+    std::cout << "Cost " << cost << std::endl;
+  }
+  else
+  {
+    // Error message
     std::cout << "Some error occured!" << std::endl;
   }
 
-  // Cost
-  auto cost = solution.obj_value;
-  std::cout << "Cost " << cost << std::endl;
   
   //////////////////////////////////////////////////////////////////////
   // Set the output values

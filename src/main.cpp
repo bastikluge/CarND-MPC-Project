@@ -113,10 +113,23 @@ int main() {
           double delta, a;
           vector<double> mpc_x_vals, mpc_y_vals;
 
-          std::cout << "INPUT:  {x, y, psi, v, cte, epsi} = {"
-            << state[0] << ", " << state[1] << ", " << state[2] << ", " << state[3] << ", " << state[4] << "}" << std::endl;
+          std::cout << "REFERENCE: {(x, y) -> (x, y) -> ...} = " << std::endl
+                    << "           {("
+                    << ptsx[0] << ", " << ptsy[0] << ") -> ("
+                    << ptsx[1] << ", " << ptsy[1] << ") -> ...}" << std::endl;
+          std::cout << "INPUT:     {x, y, psi, v, cte, epsi} = " << std::endl
+                    << "           {"
+                    << state[0] << ", " << state[1] << ", " << state[2] << ", " << state[3] << ", " << state[4] << "}" << std::endl;
+
           (void)mpc.Solve(state, coeffs, delta, a, mpc_x_vals, mpc_y_vals);
-          std::cout << "OUTPUT: {delta, a}                = {" << delta << ", " << a << "}" << std::endl;
+
+          std::cout << "OUTPUT:    {delta, a}                = "
+                    << "           {"
+                    << delta << ", " << a << "}" << std::endl;
+          std::cout << "MPC:       {(x, y) -> (x, y) -> ...} = "
+                    << "           {("
+                    << mpc_x_vals[0] << ", " << mpc_y_vals[0] << ") -> ("
+                    << mpc_x_vals[1] << ", " << mpc_y_vals[1] << ") -> ...}" << std::endl << std::endl;
 
           /*
           * Calculate steering angle and throttle using MPC.
