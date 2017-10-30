@@ -103,8 +103,9 @@ int main() {
           auto coeffs = polyfit(xvals, yvals, 3);
 
           // Solve MPC problem in vehicle coordinate system
+          const double latency = 0.1; // in seconds
           Eigen::VectorXd state(6);
-          state[0] = 0;
+          state[0] = v * latency;
           state[1] = 0;
           state[2] = 0;
           state[3] = v;
