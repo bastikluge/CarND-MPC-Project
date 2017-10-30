@@ -6,8 +6,8 @@
 using CppAD::AD;
 
 // Set the timestep length and duration
-size_t N = 25;
-double dt = 0.05;
+const size_t MPC::N = 20;
+const double MPC::dt = 0.1;
 
 // This value assumes the model presented in the classroom is used.
 //
@@ -19,23 +19,23 @@ double dt = 0.05;
 // presented in the classroom matched the previous radius.
 //
 // This is the length from front to CoG that has a similar radius.
-const double Lf = 2.67;
+const double MPC::Lf = 2.67;
 
 // Both the reference cross track and orientation errors are 0.
 // The reference velocity is set to 40 mph.
-double ref_v = 40;
+const double MPC::ref_v = 40.0;
 
 // The solver takes all the state variables and actuator
 // variables in a singular vector. Thus, we should to establish
 // when one variable starts and another ends to make our lifes easier.
 size_t x_start     = 0;
-size_t y_start     = x_start     + N;
-size_t psi_start   = y_start     + N;
-size_t v_start     = psi_start   + N;
-size_t cte_start   = v_start     + N;
-size_t epsi_start  = cte_start   + N;
-size_t delta_start = epsi_start  + N;
-size_t a_start     = delta_start + N - 1;
+size_t y_start     = x_start     + MPC::N;
+size_t psi_start   = y_start     + MPC::N;
+size_t v_start     = psi_start   + MPC::N;
+size_t cte_start   = v_start     + MPC::N;
+size_t epsi_start  = cte_start   + MPC::N;
+size_t delta_start = epsi_start  + MPC::N;
+size_t a_start     = delta_start + MPC::N - 1;
 
 // Definition of class that computes objective and constraints
 class FG_eval
@@ -68,22 +68,22 @@ public:
     fg[0] = 0;
 
     // The part of the cost based on the reference state.
-    for (size_t t = 0; t < N; t++)
+    for (size_t t = 0; t < MPC::N; t++)
     {
       fg[0] += CppAD::pow(vars[cte_start  + t], 2);
       fg[0] += CppAD::pow(vars[epsi_start + t], 2);
-      fg[0] += CppAD::pow(vars[v_start    + t] - ref_v, 2);
+      fg[0] += CppAD::pow(vars[v_start    + t] - MPC::ref_v, 2);
     }
 
     // Minimize the use of actuators.
-    for (size_t t = 0; t < N - 1; t++)
+    for (size_t t = 0; t < MPC::N - 1; t++)
     {
       fg[0] += 1.0 * CppAD::pow(vars[delta_start + t], 2);
       fg[0] += 1.0 * CppAD::pow(vars[a_start     + t], 2);
     }
 
     // Minimize the value gap between sequential actuations.
-    for (size_t t = 0; t < N - 2; t++)
+    for (size_t t = 0; t < MPC::N - 2; t++)
     {
       fg[0] += 1.0 * CppAD::pow(vars[delta_start + t + 1] - vars[delta_start + t], 2);
       fg[0] += 1.0 * CppAD::pow(vars[a_start     + t + 1] - vars[a_start     + t], 2);
@@ -107,7 +107,7 @@ public:
     fg[1 + epsi_start] = vars[epsi_start];
 
     // The rest of the constraints
-    for (size_t t = 1; t < N; t++)
+    for (size_t t = 1; t < MPC::N; t++)
     {
       // The state at time t+1 .
       AD<double> x1    = vars[x_start    + t];
@@ -129,18 +129,29 @@ public:
       AD<double> delta0 = vars[delta_start + t - 1];
       AD<double> a0     = vars[a_start     + t - 1];
 
+      // Yaw rate at time t
+      AD<double> yawRate0 = v0 * delta0 / MPC::Lf;
+
       // desired y0 value according to polynomial coefficients
       AD<double> f0 = coeffs[0] + coeffs[1] * x0 + coeffs[2] * CppAD::pow(x0, 2) + coeffs[3] * CppAD::pow(x0, 3);
       // desired angle value according to polynomial coefficients
       AD<double> psides0 = CppAD::atan(coeffs[1] + 2.0 * coeffs[2] * x0 + 3.0 * coeffs[3] * CppAD::pow(x0, 2));
 
       // State transitions
-      fg[1 + x_start    + t] = x1 -    (x0               + v0 * CppAD::cos(psi0) * dt);
-      fg[1 + y_start    + t] = y1 -    (y0               + v0 * CppAD::sin(psi0) * dt);
-      fg[1 + psi_start  + t] = psi1 -  (psi0             + v0 * delta0 / Lf * dt);
-      fg[1 + v_start    + t] = v1 -    (v0               + a0 * dt);
-      fg[1 + cte_start  + t] = cte1 -  ((f0 - y0)        + (v0 * CppAD::sin(epsi0) * dt));
-      fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+      if ( fabs(yawRate0) < 0.0001 )
+      {
+        fg[1 + x_start    + t] = x1 -  (x0               + v0 * CppAD::cos(psi0) * MPC::dt);
+        fg[1 + y_start    + t] = y1 -  (y0               + v0 * CppAD::sin(psi0) * MPC::dt);
+      }
+      else
+      {
+        fg[1 + x_start    + t] = x1 -  (x0               + (v0 / yawRate0) * (CppAD::sin(psi0 + yawRate0 * MPC::dt) - CppAD::sin(psi0)) );
+        fg[1 + y_start    + t] = y1 -  (y0               + (v0 / yawRate0) * (CppAD::cos(psi0)                      - CppAD::cos(psi0 + yawRate0 * MPC::dt)) );
+      }
+      fg[1 + psi_start  + t] = psi1 -  (psi0             + v0 * delta0 / MPC::Lf * MPC::dt);
+      fg[1 + v_start    + t] = v1 -    (v0               + a0 * MPC::dt);
+      fg[1 + cte_start  + t] = cte1 -  ((f0 - y0)        + (v0 * CppAD::sin(epsi0) * MPC::dt));
+      fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / MPC::Lf * MPC::dt);
     }
   }
 };

@@ -91,6 +91,8 @@ int main() {
           double py = j[1]["y"];
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
+          double delta0 = - j[1]["steering_angle"] * deg2Rad(25);
+          double a0     = j[1]["throttle"];
 
           // Calculate reference trajectory in vehicle coordinate system
           size_t dim = (ptsx.size() < ptsy.size()) ? ptsx.size() : ptsy.size();
@@ -104,11 +106,21 @@ int main() {
 
           // Solve MPC problem in vehicle coordinate system
           const double latency = 0.1; // in seconds
+          double yawRate = v * delta0 / MPC::Lf;
           Eigen::VectorXd state(6);
-          state[0] = v * latency;
-          state[1] = 0;
-          state[2] = 0;
-          state[3] = v;
+          if ( fabs(yawRate) < 0.0001 )
+          {
+            state[0] = v * latency;
+            state[1] = 0.0;
+            state[2] = 0.0;
+          }
+          else
+          {
+            state[0] = v / yawRate * ( sin(0.0 + yawRate * latency) - sin(0.0) );
+            state[1] = v / yawRate * ( cos(0.0)                     - cos(0.0 + yawRate * latency) );
+            state[2] = yawRate * latency;
+          }
+          state[3] = v + latency * a_0;
           state[4] = polyeval(coeffs, state[0]) - state[1];
           state[5] = state[2] - atan(coeffs[1] + 2.0 * coeffs[2] * state[0] + 3.0 * coeffs[3] * state[0] * state[0]);
           double delta, a;
