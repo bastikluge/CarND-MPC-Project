@@ -92,31 +92,31 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          // Calculate reference trajectory
+          // Calculate reference trajectory in vehicle coordinate system
           size_t dim = (ptsx.size() < ptsy.size()) ? ptsx.size() : ptsy.size();
           Eigen::VectorXd xvals(dim), yvals(dim);
           for (size_t i=0; i<dim; i++)
           {
-            xvals[i] = ptsx[i];
-            yvals[i] = ptsy[i];
+            xvals[i] = cos(-psi) * (ptsx[i] - px) - sin(-psi) * (ptsy[i] - py);
+            yvals[i] = sin(-psi) * (ptsx[i] - px) + cos(-psi) * (ptsy[i] - py);
           }
           auto coeffs = polyfit(xvals, yvals, 3);
 
-          // Solve MPC problem
+          // Solve MPC problem in vehicle coordinate system
           Eigen::VectorXd state(6);
-          state[0] = px;
-          state[1] = py;
-          state[2] = psi;
+          state[0] = 0;
+          state[1] = 0;
+          state[2] = 0;
           state[3] = v;
-          state[4] = polyeval(coeffs, px) - py;
-          state[5] = psi - atan(coeffs[1] + 2.0 * coeffs[2] * px + 3.0 * coeffs[3] * px * px);
+          state[4] = polyeval(coeffs, state[0]) - state[1];
+          state[5] = state[2] - atan(coeffs[1] + 2.0 * coeffs[2] * state[0] + 3.0 * coeffs[3] * state[0] * state[0]);
           double delta, a;
           vector<double> mpc_x_vals, mpc_y_vals;
 
           std::cout << "REFERENCE: {(x, y) -> (x, y) -> ...} = " << std::endl
                     << "           {("
-                    << ptsx[0] << ", " << ptsy[0] << ") -> ("
-                    << ptsx[1] << ", " << ptsy[1] << ") -> ...}" << std::endl;
+                    << xvals[0] << ", " << yvals[0] << ") -> ("
+                    << xvals[1] << ", " << yvals[1] << ") -> ...}" << std::endl;
           std::cout << "INPUT:     {x, y, psi, v, cte, epsi} = " << std::endl
                     << "           {"
                     << state[0] << ", " << state[1] << ", " << state[2] << ", " << state[3] << ", " << state[4] << "}" << std::endl;
@@ -137,7 +137,7 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          double steer_value    = delta / deg2rad(25);
+          double steer_value    = -delta / deg2rad(25); // scale according to simulator needs
           double throttle_value = a;
 
           json msgJson;
